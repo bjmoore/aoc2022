@@ -5,13 +5,16 @@ fn main() {
     let f = File::open("input-1.txt").unwrap();
     let f = BufReader::new(f);
 
-    let mut elfs = Vec::new();
+    let mut elfs = vec![0; 3];
     let mut current_elf = 0;
 
     for line in f.lines() {
         let line = line.unwrap();
         if line == "" {
-            elfs.push(current_elf);
+            if current_elf > elfs[0] {
+                elfs[0] = current_elf;
+                elfs.sort();
+            }
             current_elf = 0;
         }
         else {
@@ -19,10 +22,6 @@ fn main() {
         }
     }
 
-    elfs.sort();
-    elfs.reverse();
-
-    let top_3: i32 = elfs[..3].iter().sum();
-
-    println!("The top 3 elfs with the most calories are carrying {:?} calories", top_3);
+    println!("Part 1: {}", elfs[2]);
+    println!("Part 2: {}", elfs.iter().sum::<i32>());
 }
