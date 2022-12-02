@@ -63,10 +63,18 @@ fn day_2() {
 
     for line in f.lines() {
         let line = line.unwrap();
-        score_1 += strategy_values_1.get(&*line).unwrap();
-        score_2 += strategy_values_2.get(&*line).unwrap();
+        score_1 += strategy_values_1.get::<str>(&line).unwrap();
+        score_2 += strategy_values_2.get::<str>(&line).unwrap();
     }
 
     println!("Day 2 Part 1: {}", score_1);
     println!("Day 2 Part 2: {}", score_2);
+}
+
+fn day_3() {
+    let f = File::open("input-3.txt").unwrap();
+    let f = BufReader::new(f);
+
+    println!("Day 3 Part 1: {}", 0);
+    println!("Day 3 Part 2: {}", 0);
 }
