@@ -2,6 +2,11 @@ use std::io::{BufRead, BufReader};
 use std::fs::File;
 
 fn main() {
+    day_1();
+    day_2();
+}
+
+fn day_1() {
     let f = File::open("input-1.txt").unwrap();
     let f = BufReader::new(f);
 
@@ -22,6 +27,10 @@ fn main() {
         }
     }
 
-    println!("Part 1: {}", elfs[2]);
-    println!("Part 2: {}", elfs.iter().sum::<i32>());
+    println!("Day 1 Part 1: {}", elfs[2]);
+    println!("Day 1 Part 2: {}", elfs.iter().sum::<i32>());
+}
+
+fn day_2() {
+
 }
