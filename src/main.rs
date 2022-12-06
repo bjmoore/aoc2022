@@ -8,6 +8,7 @@ fn main() {
     day_2();
     day_3();
     day_4();
+    day_5();
 }
 
 fn day_1() {
@@ -84,10 +85,10 @@ fn day_3() {
 
     let mut priority_sum = 0;
 
-    for mut chunk in &f.lines().chunks(3) {
+    for chunk in &f.lines().chunks(3) {
         let shared_char = chunk
             .map(|line| line.unwrap().chars().collect::<HashSet<char>>())
-            .reduce(|acc, hs| hs.intersection(&acc).cloned().collect())
+            .reduce(|acc, hs| hs.intersection(&acc).copied().collect())
             .unwrap()
             .iter()
             .next()
@@ -97,7 +98,7 @@ fn day_3() {
         priority_sum += priority_map.get(&shared_char).unwrap();
     }
 
-    println!("Day 3 Part 1: {}", priority_sum);
+    println!("Day 3 Part 1: {}", "NOT IMPLEMENTED");
     println!("Day 3 Part 2: {}", priority_sum);
 }
 
@@ -111,7 +112,7 @@ fn day_4() {
     for line in f.lines() {
         let line = line.unwrap();
 
-        let vals: Vec<i32> = line
+        let vals: Vec<u32> = line
             .split(&['-', ','])
             .map(|s| s.parse().unwrap())
             .collect();
@@ -122,11 +123,55 @@ fn day_4() {
         } else if vals[0] >= vals[2] && vals[1] <= vals[3] {
             contained += 1;
             overlap += 1;
-        } else if (vals[0] >= vals[2] && vals[0] <= vals[3]) || (vals[1] >= vals[2] && vals[1] <= vals[3]) {
+        } else if (vals[0] >= vals[2] && vals[0] <= vals[3])
+            || (vals[1] >= vals[2] && vals[1] <= vals[3])
+        {
             overlap += 1;
         }
     }
 
     println!("Day 4 Part 1: {}", contained);
     println!("Day 4 Part 2: {}", overlap);
+}
+
+fn day_5() {
+    let f = File::open("input-5.txt").unwrap();
+    let f = BufReader::new(f);
+    let mut lines = f.lines();
+
+    let mut initial_stack: HashMap<u32, Vec<char>> = lines
+        .by_ref()
+        .map(|line| line.unwrap())
+        .take_while(|line| line != " 1   2   3   4   5   6   7   8   9 ")
+        .fold(HashMap::new(), |mut acc: HashMap<_, Vec<char>>, line| {
+                let row = line.chars()
+                    .skip(1)
+                    .step_by(4)
+                    .zip(1..);
+
+                for (box_name, column) in row {
+                    if box_name != ' ' {
+                        if let Some(vec) = acc.get_mut(&column) {
+                            vec.push(box_name);
+                        } else {
+                            acc.insert(column, Vec::from([box_name]));
+                        }
+                    }
+                }
+
+                acc
+        });
+
+    for (_, stack) in initial_stack.iter_mut() {
+        stack.reverse();
+    }
+
+    println!("{:?}", initial_stack);
+
+    for line in lines {
+        //println!("{:?}", line);
+    }
+
+    println!("Day 5 Part 1: {}", 0);
+    println!("Day 5 Part 2: {}", 0);
 }
