@@ -106,6 +106,7 @@ fn day_4() {
     let f = BufReader::new(f);
 
     let mut contained = 0;
+    let mut overlap = 0;
 
     for line in f.lines() {
         let line = line.unwrap();
@@ -117,11 +118,15 @@ fn day_4() {
 
         if vals[0] <= vals[2] && vals[1] >= vals[3] {
             contained += 1;
+            overlap += 1;
         } else if vals[0] >= vals[2] && vals[1] <= vals[3] {
             contained += 1;
+            overlap += 1;
+        } else if (vals[0] >= vals[2] && vals[0] <= vals[3]) || (vals[1] >= vals[2] && vals[1] <= vals[3]) {
+            overlap += 1;
         }
     }
 
     println!("Day 4 Part 1: {}", contained);
-    println!("Day 4 Part 2: {}", 0);
+    println!("Day 4 Part 2: {}", overlap);
 }
