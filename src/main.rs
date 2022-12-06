@@ -1,10 +1,13 @@
-use std::collections::HashMap;
+use itertools::Itertools;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn main() {
     day_1();
     day_2();
+    day_3();
+    day_4();
 }
 
 fn day_1() {
@@ -74,7 +77,51 @@ fn day_2() {
 fn day_3() {
     let f = File::open("input-3.txt").unwrap();
     let f = BufReader::new(f);
+    let priority_map: HashMap<char, i32> = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        .chars()
+        .zip(0..)
+        .collect();
 
-    println!("Day 3 Part 1: {}", 0);
-    println!("Day 3 Part 2: {}", 0);
+    let mut priority_sum = 0;
+
+    for mut chunk in &f.lines().chunks(3) {
+        let shared_char = chunk
+            .map(|line| line.unwrap().chars().collect::<HashSet<char>>())
+            .reduce(|acc, hs| hs.intersection(&acc).cloned().collect())
+            .unwrap()
+            .iter()
+            .next()
+            .unwrap()
+            .clone();
+
+        priority_sum += priority_map.get(&shared_char).unwrap();
+    }
+
+    println!("Day 3 Part 1: {}", priority_sum);
+    println!("Day 3 Part 2: {}", priority_sum);
+}
+
+fn day_4() {
+    let f = File::open("input-4.txt").unwrap();
+    let f = BufReader::new(f);
+
+    let mut contained = 0;
+
+    for line in f.lines() {
+        let line = line.unwrap();
+
+        let vals: Vec<i32> = line
+            .split(&['-', ','])
+            .map(|s| s.parse().unwrap())
+            .collect();
+
+        if vals[0] <= vals[2] && vals[1] >= vals[3] {
+            contained += 1;
+        } else if vals[0] >= vals[2] && vals[1] <= vals[3] {
+            contained += 1;
+        }
+    }
+
+    println!("Day 4 Part 1: {}", contained);
+    println!("Day 4 Part 2: {}", 0);
 }
