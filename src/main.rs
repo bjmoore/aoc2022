@@ -2,6 +2,8 @@ use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use regex::Regex;
+use std::cell::RefCell;
 
 fn main() {
     day_1();
@@ -139,11 +141,11 @@ fn day_5() {
     let f = BufReader::new(f);
     let mut lines = f.lines();
 
-    let mut initial_stack: HashMap<u32, Vec<char>> = lines
+    let initial_stack: HashMap<u32, RefCell<Vec<char>>> = lines
         .by_ref()
         .map(|line| line.unwrap())
         .take_while(|line| line != " 1   2   3   4   5   6   7   8   9 ")
-        .fold(HashMap::new(), |mut acc: HashMap<_, Vec<char>>, line| {
+        .fold(HashMap::new(), |mut acc: HashMap<_, RefCell<Vec<char>>>, line| {
                 let row = line.chars()
                     .skip(1)
                     .step_by(4)
@@ -152,9 +154,9 @@ fn day_5() {
                 for (box_name, column) in row {
                     if box_name != ' ' {
                         if let Some(vec) = acc.get_mut(&column) {
-                            vec.push(box_name);
+                            vec.get_mut().push(box_name);
                         } else {
-                            acc.insert(column, Vec::from([box_name]));
+                            acc.insert(column, RefCell::new(Vec::from([box_name])));
                         }
                     }
                 }
@@ -162,16 +164,30 @@ fn day_5() {
                 acc
         });
 
-    for (_, stack) in initial_stack.iter_mut() {
-        stack.reverse();
+    for (_, stack) in initial_stack.iter() {
+        stack.borrow_mut().reverse();
     }
 
-    println!("{:?}", initial_stack);
+    let re = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
 
     for line in lines {
-        //println!("{:?}", line);
+        let line = line.unwrap();
+        if let Some(cap) = re.captures(&line) {
+            let count: usize = cap[1].parse().unwrap();
+            let source = cap[2].parse().unwrap();
+            let target = cap[3].parse().unwrap();
+            let mut source = initial_stack.get(&source).unwrap().borrow_mut();
+            let mut target = initial_stack.get(&target).unwrap().borrow_mut();
+            let at: usize = source.len() - count;
+            let mut moving_boxes = source.split_off(at);
+            target.append(&mut moving_boxes);
+        }
     }
 
-    println!("Day 5 Part 1: {}", 0);
-    println!("Day 5 Part 2: {}", 0);
+    for i in 1..=9 {
+        println!("{}", initial_stack.get(&i).unwrap().borrow().last().unwrap());
+    }
+
+    println!("Day 5 Part 1: {}", "NOT IMPLEMENTED");
+    println!("Day 5 Part 2: {}", "NOT IMPLEMENTED");
 }
