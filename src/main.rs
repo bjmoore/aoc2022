@@ -1,6 +1,6 @@
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
-use std::fs::File;
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::fs::{File, read_to_string};
 use std::io::{BufRead, BufReader};
 use regex::Regex;
 use std::cell::RefCell;
@@ -11,6 +11,7 @@ fn main() {
     day_3();
     day_4();
     day_5();
+    day_6();
 }
 
 fn day_1() {
@@ -185,9 +186,40 @@ fn day_5() {
     }
 
     for i in 1..=9 {
-        println!("{}", initial_stack.get(&i).unwrap().borrow().last().unwrap());
+       //println!("{}", initial_stack.get(&i).unwrap().borrow().last().unwrap());
     }
 
     println!("Day 5 Part 1: {}", "NOT IMPLEMENTED");
     println!("Day 5 Part 2: {}", "NOT IMPLEMENTED");
+}
+
+fn day_6() {
+    let f = read_to_string("input-6.txt").unwrap();
+
+    let mut buf: VecDeque<char> = VecDeque::new();
+    let mut set: HashMap<char, u32> = HashMap::new();
+    let mut first_packet_index = 0;
+
+    for (i, c) in f.chars().enumerate() {
+        if buf.len() == 14 {
+            let c = buf.pop_back().unwrap();
+            let mut count = set.get_mut(&c).unwrap();
+            *count -= 1;
+        }
+        buf.push_front(c);
+        if let Some(count) = set.get_mut(&c) {
+            *count += 1;
+        } else {
+            set.insert(c, 1);
+        }
+        if buf.len() == 14 {
+            if set.iter().all(|(_, &v)| v < 2) && set.iter().fold(0, |acc, (_, &v)| acc + v) == 14 {
+                first_packet_index = i;
+                break;
+            }
+        }
+    }
+
+    println!("Day 6 Part 1: {}", first_packet_index + 1);
+    println!("Day 6 Part 2: {}", "NOT IMPLEMENTED");
 }
