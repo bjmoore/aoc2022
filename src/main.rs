@@ -353,7 +353,7 @@ impl Monkey {
         let mut false_items = Vec::new();
         for item in self.items.iter() {
             self.items_inspected += 1;
-            let item = (self.operation)(*item) / 3;
+            let item = (self.operation)(*item) % 9699690;
             if (self.test)(item) {
                 true_items.push(item);
             } else {
@@ -446,7 +446,7 @@ fn day_11() {
         1,
     )));
 
-    for _ in 0..20 {
+    for _ in 0..10000 {
         for monkey in &monkeys {
             let mut main_monkey = monkey.borrow_mut();
             let mut true_monkey = monkeys[main_monkey.true_target].borrow_mut();
@@ -461,5 +461,5 @@ fn day_11() {
     let mut monkey_business: Vec<u64> = monkeys.iter().map(|x| x.borrow().items_inspected).collect();
     monkey_business.sort();
 
-    println!("Day 11 Part 1: {}", monkey_business[6] * monkey_business[7]);
+    println!("Day 11 Part 2: {}", monkey_business[6] * monkey_business[7]);
 }
