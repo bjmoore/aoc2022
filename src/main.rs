@@ -1,9 +1,9 @@
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::fs::{File, read_to_string};
-use std::io::{BufRead, BufReader};
 use regex::Regex;
 use std::cell::RefCell;
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::fs::{read_to_string, File};
+use std::io::{BufRead, BufReader};
 
 fn main() {
     day_1();
@@ -12,6 +12,8 @@ fn main() {
     day_4();
     day_5();
     day_6();
+    day_7();
+    day_10();
 }
 
 fn day_1() {
@@ -146,11 +148,10 @@ fn day_5() {
         .by_ref()
         .map(|line| line.unwrap())
         .take_while(|line| line != " 1   2   3   4   5   6   7   8   9 ")
-        .fold(HashMap::new(), |mut acc: HashMap<_, RefCell<Vec<char>>>, line| {
-                let row = line.chars()
-                    .skip(1)
-                    .step_by(4)
-                    .zip(1..);
+        .fold(
+            HashMap::new(),
+            |mut acc: HashMap<_, RefCell<Vec<char>>>, line| {
+                let row = line.chars().skip(1).step_by(4).zip(1..);
 
                 for (box_name, column) in row {
                     if box_name != ' ' {
@@ -163,17 +164,18 @@ fn day_5() {
                 }
 
                 acc
-        });
+            },
+        );
 
     for (_, stack) in initial_stack.iter() {
         stack.borrow_mut().reverse();
     }
 
-    let re = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
+    let filesize_regex = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
 
     for line in lines {
         let line = line.unwrap();
-        if let Some(cap) = re.captures(&line) {
+        if let Some(cap) = filesize_regex.captures(&line) {
             let count: usize = cap[1].parse().unwrap();
             let source = cap[2].parse().unwrap();
             let target = cap[3].parse().unwrap();
@@ -186,7 +188,7 @@ fn day_5() {
     }
 
     for i in 1..=9 {
-       //println!("{}", initial_stack.get(&i).unwrap().borrow().last().unwrap());
+        //println!("{}", initial_stack.get(&i).unwrap().borrow().last().unwrap());
     }
 
     println!("Day 5 Part 1: {}", "NOT IMPLEMENTED");
@@ -222,4 +224,115 @@ fn day_6() {
 
     println!("Day 6 Part 1: {}", first_packet_index + 1);
     println!("Day 6 Part 2: {}", "NOT IMPLEMENTED");
+}
+
+fn day_7() {
+    let f = File::open("input-7.txt").unwrap();
+    let f = BufReader::new(f);
+
+    let mut sum_under_100000 = 0;
+    let mut stack = Vec::new();
+    let mut dir_sizes = Vec::new();
+    let mut current_size: u32 = 0;
+    let mut total_used: u32 = 0;
+
+    let filesize_regex = Regex::new(r"^(\d+)").unwrap();
+
+    for line in f.lines() {
+        let line = line.unwrap();
+        // if $ cd /, $ ls, dir xyz: ignore
+        if let Some(cap) = filesize_regex.captures(&line) {
+            // if 1234 x.txt: add to current dir size
+            let filesize = cap[1].parse::<u32>().unwrap();
+            total_used += filesize;
+            current_size += filesize;
+        } else if line == "$ cd .." {
+            // if cd ..: add current size to sum_under_100k if <100000, pop from stack and add to parent dir size
+            dir_sizes.push(current_size);
+            if current_size < 100000 {
+                sum_under_100000 += current_size;
+            }
+            current_size += stack.pop().unwrap();
+        } else if line.starts_with("$ cd") {
+            // if cd xyz: push current size to stack
+            stack.push(current_size);
+            current_size = 0;
+        }
+    }
+
+    // at the end we need to pop our way back up the stack:
+
+    dir_sizes.push(current_size);
+    if current_size < 100000 {
+        sum_under_100000 += current_size;
+    }
+
+    while let Some(size) = stack.pop() {
+        current_size += size;
+        dir_sizes.push(current_size);
+        if current_size < 100000 {
+            sum_under_100000 += current_size;
+        }
+    }
+
+    let space_needed = total_used - 40000000;
+
+    println!("Day 7 Part 1: {}", sum_under_100000);
+    println!(
+        "Day 7 Part 2: {}",
+        dir_sizes
+            .iter()
+            .filter(|x| *x > &space_needed)
+            .min()
+            .unwrap()
+    );
+}
+
+fn day_8() {}
+
+fn day_9() {}
+
+// Find the signal strength during the 20th, 60th, 100th, 140th, 180th, and 220th cycles. What is the sum of these six signal strengths?
+fn day_10() {
+    let f = File::open("input-10.txt").unwrap();
+    let f = BufReader::new(f);
+
+    let mut program = Vec::<i32>::new();
+    for line in f.lines() {
+        let line = line.unwrap();
+        program.push(0);
+        if line != "noop" {
+            program.push(line[5..].parse::<i32>().unwrap());
+        }
+    }
+
+    let state: Vec<i32> = program
+        .iter()
+        .scan(1, |state, &x| {
+            *state += x;
+
+            Some(*state)
+        })
+        .collect();
+
+    let signal_sum = state[19] * 20
+        + state[59] * 60
+        + state[99] * 100
+        + state[139] * 140
+        + state[179] * 180
+        + state[219] * 220;
+
+    let graphics: String = (1..)
+        .zip(state.iter())
+        .map(|(i, s)| {
+            if (*s >= i % 40 - 1) && (*s <= i % 40 + 1) {
+                '#'
+            } else {
+                ' '
+            }
+        })
+        .collect();
+
+    println!("Day 10 Part 1: {}", signal_sum);
+    println!("Day 10 Part 2: {}", graphics);
 }
