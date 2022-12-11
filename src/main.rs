@@ -14,6 +14,7 @@ fn main() {
     day_6();
     day_7();
     day_10();
+    day_11();
 }
 
 fn day_1() {
@@ -335,4 +336,130 @@ fn day_10() {
 
     println!("Day 10 Part 1: {}", signal_sum);
     println!("Day 10 Part 2: {}", graphics);
+}
+
+struct Monkey {
+    items: Vec<u64>,
+    operation: Box<dyn Fn(u64) -> u64>,
+    test: Box<dyn Fn(u64) -> bool>,
+    true_target: usize,
+    false_target: usize,
+    items_inspected: u64,
+}
+
+impl Monkey {
+    fn inspect_and_throw(&mut self) -> (Vec<u64>, Vec<u64>) {
+        let mut true_items = Vec::new();
+        let mut false_items = Vec::new();
+        for item in self.items.iter() {
+            self.items_inspected += 1;
+            let item = (self.operation)(*item) / 3;
+            if (self.test)(item) {
+                true_items.push(item);
+            } else {
+                false_items.push(item);
+            }
+        }
+
+        self.items.clear();
+        (true_items, false_items)
+    }
+
+    fn new<O: 'static, T: 'static>(
+        items: Vec<u64>,
+        operation: O,
+        test: T,
+        true_target: usize,
+        false_target: usize,
+    ) -> Self
+    where
+        O: Fn(u64) -> u64,
+        T: Fn(u64) -> bool,
+    {
+        Self {
+            items,
+            operation: Box::new(operation),
+            test: Box::new(test),
+            true_target,
+            false_target,
+            items_inspected: 0,
+        }
+    }
+}
+
+fn day_11() {
+    let mut monkeys = Vec::new();
+    monkeys.push(RefCell::new(Monkey::new(
+        vec![63, 57],
+        |x| x * 11,
+        |x| x % 7 == 0,
+        6,
+        2,
+    )));
+    monkeys.push(RefCell::new(Monkey::new(
+        vec![82, 66, 87, 78, 77, 92, 83],
+        |x| x + 1,
+        |x| x % 11 == 0,
+        5,
+        0,
+    )));
+    monkeys.push(RefCell::new(Monkey::new(
+        vec![97, 53, 53, 85, 58, 54],
+        |x| x * 7,
+        |x| x % 13 == 0,
+        4,
+        3,
+    )));
+    monkeys.push(RefCell::new(Monkey::new(
+        vec![50],
+        |x| x + 3,
+        |x| x % 3 == 0,
+        1,
+        7,
+    )));
+    monkeys.push(RefCell::new(Monkey::new(
+        vec![64, 69, 52, 65, 73],
+        |x| x + 6,
+        |x| x % 17 == 0,
+        3,
+        7,
+    )));
+    monkeys.push(RefCell::new(Monkey::new(
+        vec![57, 91, 65],
+        |x| x + 5,
+        |x| x % 2 == 0,
+        0,
+        6,
+    )));
+    monkeys.push(RefCell::new(Monkey::new(
+        vec![67, 91, 84, 78, 60, 69, 99, 83],
+        |x| x * x,
+        |x| x % 5 == 0,
+        2,
+        4,
+    )));
+    monkeys.push(RefCell::new(Monkey::new(
+        vec![58, 78, 69, 65],
+        |x| x + 7,
+        |x| x % 19 == 0,
+        5,
+        1,
+    )));
+
+    for _ in 0..20 {
+        for monkey in &monkeys {
+            let mut main_monkey = monkey.borrow_mut();
+            let mut true_monkey = monkeys[main_monkey.true_target].borrow_mut();
+            let mut false_monkey = monkeys[main_monkey.false_target].borrow_mut();
+
+            let (mut true_items, mut false_items) = main_monkey.inspect_and_throw();
+            true_monkey.items.append(&mut true_items);
+            false_monkey.items.append(&mut false_items);
+        }
+    }
+
+    let mut monkey_business: Vec<u64> = monkeys.iter().map(|x| x.borrow().items_inspected).collect();
+    monkey_business.sort();
+
+    println!("Day 11 Part 1: {}", monkey_business[6] * monkey_business[7]);
 }
