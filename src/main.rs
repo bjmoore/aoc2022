@@ -15,6 +15,7 @@ fn main() {
     day_7();
     day_10();
     day_11();
+    day_12();
 }
 
 fn day_1() {
@@ -291,7 +292,26 @@ fn day_7() {
 
 fn day_8() {}
 
-fn day_9() {}
+fn day_9() {
+    let f = File::open("input-9.txt").unwrap();
+    let f = BufReader::new(f);
+
+    let mut tail_positions = HashSet::<(i32, i32)>::new();
+
+    for line in f.lines() {
+        let line = line.unwrap();
+
+        // parse line
+        // update HEAD position
+        // while not_touching(head, tail) {
+        //  if tail, head same row or column:
+        //      move tail 1 toward head
+        //  else:
+        //      move tail toward head on each axis
+        //  add tail pos to tail_positions
+    }
+}
+
 
 // Find the signal strength during the 20th, 60th, 100th, 140th, 180th, and 220th cycles. What is the sum of these six signal strengths?
 fn day_10() {
@@ -326,7 +346,7 @@ fn day_10() {
     let graphics: String = (1..)
         .zip(state.iter())
         .map(|(i, s)| {
-            if (*s >= i % 40 - 1) && (*s <= i % 40 + 1) {
+            if (i % 40 <= *s + 1) && (i % 40 >= *s - 1) {
                 '#'
             } else {
                 ' '
@@ -335,7 +355,7 @@ fn day_10() {
         .collect();
 
     println!("Day 10 Part 1: {}", signal_sum);
-    println!("Day 10 Part 2: {}", graphics);
+    println!("Day 10 Part 2: '{}'", graphics);
 }
 
 struct Monkey {
@@ -462,4 +482,73 @@ fn day_11() {
     monkey_business.sort();
 
     println!("Day 11 Part 2: {}", monkey_business[6] * monkey_business[7]);
+}
+
+fn day_12() {
+    let height_values: HashMap<char, u8> = "abcdefghijklmnopqrstuvwxyz"
+        .chars()
+        .zip(1..)
+        .collect();
+
+    // processing queue is a vecdeque
+    // visited elements is a hashmap<(u8, u8), u8> (?? too small?)
+    // goal point is a (u8, u8)
+
+    // input is 171x40
+    let f = File::open("input-12.txt").unwrap();
+    let f = BufReader::new(f);
+
+    let mut arr = [[1u8; 41]; 171];
+
+    let mut visited: HashSet<(u8, u8)> = HashSet::new();
+    let mut process_queue: VecDeque<(u8, u8, u16)> = VecDeque::new();
+    let mut starting_point: (u8, u8) = (0, 0);
+
+    for (line, y) in f.lines().zip(0..) {
+        let line = line.unwrap();
+        for (c, x) in line.chars().zip(0..) {
+            if c == 'S' {
+                starting_point = (x, y);
+            } else if c == 'E' {
+                arr[x as usize][y as usize] = 26;
+                process_queue.push_back((x, y, 0));
+                visited.insert((x, y));
+            } else {
+                arr[x as usize][y as usize] = *height_values.get(&c).unwrap();
+            }
+        }
+    }
+
+    let mut shortest_path_to_start = 0;
+    let mut shortest_path_to_a = 10000;
+
+    while let Some((x, y, dist)) = process_queue.pop_front() {
+        let height = arr[x as usize][y as usize];
+        let mut to_visit = Vec::<(u8, u8)>::new();
+        if x > 0 { to_visit.push((x-1, y)); }
+        if x < 170 { to_visit.push((x+1, y)); }
+        if y > 0 { to_visit.push((x, y-1)); }
+        if y < 40 { to_visit.push((x, y+1)); }
+
+        for (i, j) in to_visit {
+            let target_height = arr[i as usize][j as usize];
+            if visited.contains(&(i, j)) {
+                continue;
+            } 
+
+            if target_height >= height - 1 {
+                if (i, j) == starting_point {
+                    shortest_path_to_start = dist + 1;
+                } else if target_height == 1 && shortest_path_to_a > dist + 1 {
+                    shortest_path_to_a = dist + 1;
+                } 
+            
+                process_queue.push_back((i, j, dist + 1));
+                visited.insert((i, j));
+            }
+        }
+    }
+    
+    println!("{}", shortest_path_to_start);
+    println!("{}", shortest_path_to_a);
 }
