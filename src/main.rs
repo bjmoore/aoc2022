@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use regex::Regex;
 use std::cell::RefCell;
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::{read_to_string, File};
 use std::io::{BufRead, BufReader};
@@ -16,6 +17,7 @@ fn main() {
     day_10();
     day_11();
     day_12();
+    day_13();
 }
 
 fn day_1() {
@@ -312,7 +314,6 @@ fn day_9() {
     }
 }
 
-
 // Find the signal strength during the 20th, 60th, 100th, 140th, 180th, and 220th cycles. What is the sum of these six signal strengths?
 fn day_10() {
     let f = File::open("input-10.txt").unwrap();
@@ -478,17 +479,15 @@ fn day_11() {
         }
     }
 
-    let mut monkey_business: Vec<u64> = monkeys.iter().map(|x| x.borrow().items_inspected).collect();
+    let mut monkey_business: Vec<u64> =
+        monkeys.iter().map(|x| x.borrow().items_inspected).collect();
     monkey_business.sort();
 
     println!("Day 11 Part 2: {}", monkey_business[6] * monkey_business[7]);
 }
 
 fn day_12() {
-    let height_values: HashMap<char, u8> = "abcdefghijklmnopqrstuvwxyz"
-        .chars()
-        .zip(1..)
-        .collect();
+    let height_values: HashMap<char, u8> = "abcdefghijklmnopqrstuvwxyz".chars().zip(1..).collect();
 
     // processing queue is a vecdeque
     // visited elements is a hashmap<(u8, u8), u8> (?? too small?)
@@ -525,30 +524,180 @@ fn day_12() {
     while let Some((x, y, dist)) = process_queue.pop_front() {
         let height = arr[x as usize][y as usize];
         let mut to_visit = Vec::<(u8, u8)>::new();
-        if x > 0 { to_visit.push((x-1, y)); }
-        if x < 170 { to_visit.push((x+1, y)); }
-        if y > 0 { to_visit.push((x, y-1)); }
-        if y < 40 { to_visit.push((x, y+1)); }
+        if x > 0 {
+            to_visit.push((x - 1, y));
+        }
+        if x < 170 {
+            to_visit.push((x + 1, y));
+        }
+        if y > 0 {
+            to_visit.push((x, y - 1));
+        }
+        if y < 40 {
+            to_visit.push((x, y + 1));
+        }
 
         for (i, j) in to_visit {
             let target_height = arr[i as usize][j as usize];
             if visited.contains(&(i, j)) {
                 continue;
-            } 
+            }
 
             if target_height >= height - 1 {
                 if (i, j) == starting_point {
                     shortest_path_to_start = dist + 1;
                 } else if target_height == 1 && shortest_path_to_a > dist + 1 {
                     shortest_path_to_a = dist + 1;
-                } 
-            
+                }
+
                 process_queue.push_back((i, j, dist + 1));
                 visited.insert((i, j));
             }
         }
     }
-    
-    println!("{}", shortest_path_to_start);
-    println!("{}", shortest_path_to_a);
+
+    println!("Day 12 Part 1: {}", shortest_path_to_start);
+    println!("Day 12 Part 2: {}", shortest_path_to_a);
+}
+
+#[derive(PartialEq, Eq, Debug)]
+enum Tree {
+    Empty,
+    Leaf(u8),
+    Tree(Vec<Box<Tree>>),
+}
+
+impl Ord for Tree {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Tree::Tree(val), Tree::Tree(other_val)) => val.cmp(&other_val),
+            (Tree::Leaf(val), Tree::Leaf(other_val)) => val.cmp(&other_val),
+            (Tree::Leaf(val), Tree::Tree(other_val)) => {
+                Vec::from([Box::new(Tree::Leaf(*val))]).cmp(&other_val)
+            }
+            (Tree::Tree(val), Tree::Leaf(other_val)) => {
+                val.cmp(&Vec::from([Box::new(Tree::Leaf(*other_val))]))
+            }
+            (Tree::Empty, Tree::Empty) => Ordering::Equal,
+            (Tree::Empty, _) => Ordering::Less,
+            (_, Tree::Empty) => Ordering::Greater,
+        }
+    }
+}
+
+impl PartialOrd for Tree {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Tree {
+    fn push(&mut self, val: u8) {
+        match self {
+            Tree::Tree(children) => children.push(Box::new(Tree::Leaf(val))),
+            _ => (),
+        }
+    }
+}
+
+fn build_tree(input: &str) -> Tree {
+    // write a little state machine with transitions:
+    // NUMERIC -> SEPARATOR: parse int, flush buf
+    // NUMERIC -> NUMERIC: just add to buf
+    // SEPARATOR -> NUMERIC: just add to buf
+    // SEPARATOR -> OPEN [: create new tree, push cur tree to stack, cur tree = new tree
+    // OPEN [ -> OPEN [: create new tree, push cur tree to stack, cur tree = new tree
+    // NUMERIC -> CLOSE ]: parse int, flush buf, pop old tree from stack, old_tree.push(new_tree), cur tree = old tree
+    // CLOSE ] -> CLOSE ]: pop old tree from stack, old_tree.push(new_tree), cur tree = old tree
+    // OPEN [ -> NUMERIC: just add to buf
+
+    let mut buf = String::new();
+    let mut tree_stack = Vec::<Tree>::new();
+    let mut cur_tree = Tree::Empty;
+    for c in input.chars() {
+        // is_numeric
+        if c.is_numeric() {
+            buf.push(c);
+        } else if c == ',' {
+            if !buf.is_empty() {
+                let val: u8 = buf.parse().unwrap();
+                cur_tree.push(val);
+                buf.clear();
+            }
+        } else if c == '[' {
+            tree_stack.push(cur_tree);
+            cur_tree = Tree::Tree(Vec::new());
+        } else if c == ']' {
+            if !buf.is_empty() {
+                let val: u8 = buf.parse().unwrap();
+                cur_tree.push(val);
+                buf.clear();
+            }
+            if let Tree::Tree(mut old_tree) = tree_stack.pop().unwrap() {
+                old_tree.push(Box::new(cur_tree));
+                cur_tree = Tree::Tree(old_tree);
+            }
+        }
+    }
+
+    cur_tree
+}
+
+fn day_13() {
+    let f = File::open("input-13.txt").unwrap();
+    let f = BufReader::new(f);
+
+    let mut treebuf: Vec<Tree> = f
+        .lines()
+        .map(|l| l.unwrap())
+        .filter(|l| l != "")
+        .map(|l| build_tree(&l))
+        .collect();
+
+    let sum_of_ordered_pair_indices: u32 = treebuf
+        .chunks(2)
+        .zip(1..)
+        .map(|(trees, i)| match trees[0].cmp(&trees[1]) {
+            Ordering::Less | Ordering::Equal => i,
+            _ => 0,
+        })
+        .sum();
+
+    let divider_1 = build_tree("[[2]]");
+    let divider_2 = build_tree("[[6]]");
+
+    treebuf.push(build_tree("[[2]]"));
+    treebuf.push(build_tree("[[6]]"));
+
+    treebuf.sort();
+
+    for (i, tree) in treebuf.iter().enumerate() {
+        println!("{}: {:?}", i, tree);
+    }
+
+    let divider_indices: Vec<usize> = treebuf
+        .iter()
+        .enumerate()
+        .filter(|(i, t)| *t == &divider_1 || *t == &divider_2)
+        .map(|(i, _)| i)
+        .collect();
+
+    println!("Day 13 Part 1: {}", sum_of_ordered_pair_indices);
+    println!("Day 13 Part 2: {:?}", divider_indices);
+}
+
+fn day_14() {
+    let f = File::open("input-14.txt").unwrap();
+    let f = BufReader::new(f);
+
+    // #1: parse lines to build catcher structure
+    // #2: simulate sand falling until one of them reaches the lowest wall built in step #1
+    let mut walls =  HashSet::<(u16, u16)>::new();
+
+    for line in f.lines() {
+        let line = line.unwrap();
+    }
+
+    println!("Day 14 Part 1: {}", sum_of_ordered_pair_indices);
+    println!("Day 14 Part 2: {:?}", divider_indices);
 }
