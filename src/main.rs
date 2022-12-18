@@ -29,6 +29,7 @@ fn main() {
     day_12();
     day_13();
     day_14();
+    day_15();
     day_18();
 }
 
@@ -281,7 +282,7 @@ fn day_7() {
 }
 
 fn day_8() {
-    let f = File::open("8-test.txt").unwrap();
+    let f = File::open("input-8.txt").unwrap();
     let f = BufReader::new(f);
 
     let map: HashMap<(u8, u8), u32> = f
@@ -296,96 +297,95 @@ fn day_8() {
         })
         .collect();
 
-    const max_len: u8 = 5;
+    const max_len: u8 = 99;
     let mut scenic_score = [[1u32; max_len as usize]; max_len as usize];
 
     let mut vis = HashSet::new();
     for i in 0..max_len {
         let mut vis_threshold = 0;
-        let mut last = 0;
-        let mut scenic = 1;
+        let mut scenic_score_line = [0u32; 10];
         for j in 0..max_len {
             let height = *map.get(&(i, j)).unwrap();
             if height > vis_threshold {
                 vis.insert((i, j));
                 vis_threshold = height;
             }
-            if height <= last {
-                scenic = 1;
-            } else {
-                scenic += 1;
+            scenic_score[i as usize][j as usize] *= scenic_score_line[(height-1) as usize];
+            for k in 0..10 {
+                if (height-1) < k {
+                    scenic_score_line[k as usize] += 1;
+                } else {
+                    scenic_score_line[k as usize] = 1;
+                }
             }
-            last = height;
-            scenic_score[i as usize][j as usize] *= scenic;
         }
     }
 
     for i in 0..max_len {
         let mut vis_threshold = 0;
-        let mut last = 0;
-        let mut scenic = 1;
+        let mut scenic_score_line = [0u32; 10];
         for j in 0..max_len {
             let height = *map.get(&(j, i)).unwrap();
             if height > vis_threshold {
                 vis.insert((j, i));
                 vis_threshold = height;
             }
-            if height <= last {
-                scenic = 1;
-            } else {
-                scenic += 1;
+            scenic_score[j as usize][i as usize] *= scenic_score_line[(height-1) as usize];
+            for k in 0..10 {
+                if (height-1) < k {
+                    scenic_score_line[k as usize] += 1;
+                } else {
+                    scenic_score_line[k as usize] = 1;
+                }
             }
-            last = height;
-            scenic_score[j as usize][i as usize] *= scenic;
         }
     }
+    
 
     for i in 0..max_len {
         let mut vis_threshold = 0;
-        let mut last = 0;
-        let mut scenic = 1;
+        let mut scenic_score_line = [0u32; 10];
         for j in (0..max_len).rev() {
             let height = *map.get(&(i, j)).unwrap();
             if height > vis_threshold {
                 vis.insert((i, j));
                 vis_threshold = height;
             }
-            if height <= last {
-                scenic = 1;
-            } else {
-                scenic += 1;
+            scenic_score[i as usize][j as usize] *= scenic_score_line[(height-1) as usize];
+            for k in 0..10 {
+                if (height-1) < k {
+                    scenic_score_line[k as usize] += 1;
+                } else {
+                    scenic_score_line[k as usize] = 1;
+                }
             }
-            last = height;
-            scenic_score[i as usize][j as usize] *= scenic;
-        }
+        } 
     }
 
     for i in 0..max_len {
         let mut vis_threshold = 0;
-        let mut last = 0;
-        let mut scenic = 1;
+        let mut scenic_score_line = [0u32; 10];
         for j in (0..max_len).rev() {
             let height = *map.get(&(j, i)).unwrap();
             if height > vis_threshold {
                 vis.insert((j, i));
                 vis_threshold = height;
             }
-            if height <= last {
-                scenic = 1;
-            } else {
-                scenic_score[j as usize][i as usize] *= scenic;
-                scenic += 1;
+            scenic_score[j as usize][i as usize] *= scenic_score_line[(height-1) as usize];
+            for k in 0..10 {
+                if (height-1) < k {
+                    scenic_score_line[k as usize] += 1;
+                } else {
+                    scenic_score_line[k as usize] = 1;
+                }
             }
-            last = height;
         }
     }
+
+    let max_scenic_score = scenic_score.iter().flatten().max().unwrap();
 
     println!("Day 8 Part 1: {}", vis.len());
-    println!("Day 8 Part 2: {:?}", scenic_score);
-    println!(
-        "Day 8 Part 2: {:?}",
-        scenic_score.iter().flatten().max().unwrap()
-    );
+    println!("Day 8 Part 2: {:?}", max_scenic_score);
 }
 
 #[derive(Debug)]
@@ -913,6 +913,95 @@ fn day_14() {
 
     println!("Day 14 Part 1: {}", 0);
     println!("Day 14 Part 2: {}", 0);
+}
+
+#[derive(Debug)]
+struct Sensor {
+    x: i32,
+    y: i32,
+    beacon_range: i32
+}
+
+fn parse_sensor_layout(f: BufReader<File>) -> Vec<Sensor> {
+    let mut sensors: Vec<Sensor> = Vec::new();
+
+    for line in f.lines() {
+        let line = line.unwrap();
+        let mut line = line.split(' ');
+        // 2 0 4 0
+        let bad: &[_] = &['x', 'y', '=', ',', ':'];
+        let sensor_x = line.nth(2).unwrap().trim_matches(bad).parse::<i32>().unwrap();
+        let sensor_y = line.nth(0).unwrap().trim_matches(bad).parse::<i32>().unwrap();
+        let beacon_x = line.nth(4).unwrap().trim_matches(bad).parse::<i32>().unwrap();
+        let beacon_y = line.nth(0).unwrap().trim_matches(bad).parse::<i32>().unwrap();
+
+        sensors.push(Sensor { x: sensor_x, y: sensor_y, beacon_range: (sensor_x - beacon_x).abs() + (sensor_y - beacon_y).abs()})
+    }
+
+    sensors
+}
+
+fn merge_intervals(mut intervals: Vec<[i32; 2]>) -> Vec<[i32; 2]> {
+    intervals.sort_unstable();
+    intervals.iter().fold(Vec::new(), |mut acc, &next| {
+        if let Some(last) = acc.pop() {
+            if next[0] > last[1] {
+                acc.push(last);
+                acc.push(next);
+            } else if next[1] <= last[1] {
+                acc.push(last);
+            } else {
+                acc.push([last[0], next[1]]);
+            }
+        } else {
+            acc.push(next);
+        }
+
+        acc
+    })
+}
+
+fn day_15() {
+    let f = File::open("input-15.txt").unwrap();
+    let f = BufReader::new(f);
+
+    let sensors = parse_sensor_layout(f);
+
+    let min_x = sensors.iter().map(|s| s.x - s.beacon_range).min().unwrap();
+    let max_x = sensors.iter().map(|s| s.x + s.beacon_range).max().unwrap();
+
+    let y = 2000000;
+    let y_intervals_2m: Vec<[i32; 2]> = sensors.iter().filter_map(|s| {
+        let displacement = (s.y - y).abs();
+        if displacement <= s.beacon_range {
+            Some([s.x - s.beacon_range + displacement, s.x + s.beacon_range - displacement + 1])
+        } else {
+            None
+        }
+    }).collect();
+    let row_2000000 = merge_intervals(y_intervals_2m);
+
+    let excluded_squares = row_2000000[0][1] - row_2000000[0][0] - 1 ;
+
+    let (x, y): (u64, u64) = (0..4000000).find_map(|y| {
+        let y_intervals: Vec<[i32; 2]> = sensors.iter().filter_map(|s| {
+            let displacement = (s.y - y).abs();
+            if displacement <= s.beacon_range {
+                Some([s.x - s.beacon_range + displacement, s.x + s.beacon_range - displacement + 1])
+            } else {
+                None
+            }
+        }).collect();
+        let merged = merge_intervals(y_intervals);
+        if merged.len() == 2 {
+            Some((merged[0][1] as u64, y as u64))
+        } else {
+            None
+        }
+    }).unwrap();
+
+    println!("Day 15 Part 1: {}", excluded_squares);
+    println!("Day 15 Part 2: {}", x * 4000000 + y);
 }
 
 fn parse_voxels(f: BufReader<File>) -> HashSet<(i8, i8, i8)> {
