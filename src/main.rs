@@ -1,3 +1,4 @@
+use crate::day1::solve;
 use itertools::Itertools;
 use regex::Regex;
 use std::cell::RefCell;
@@ -5,11 +6,15 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::{read_to_string, File};
 use std::io::{BufRead, BufReader};
-use crate::day1::solve;
+use std::str::FromStr;
 
 mod day1;
 
 fn main() {
+    // Common functionality:
+    // parse args
+    // getting the input file
+    // print result with benchmark
     day1::solve();
     day_2();
     day_3();
@@ -18,6 +23,7 @@ fn main() {
     day_6();
     day_7();
     day_8();
+    day_9();
     day_10();
     day_11();
     day_12();
@@ -382,24 +388,145 @@ fn day_8() {
     );
 }
 
+#[derive(Debug)]
+enum Direction {
+    U,
+    D,
+    L,
+    R,
+}
+
+#[derive(Debug)]
+struct Movement {
+    direction: Direction,
+    distance: i32,
+}
+
+#[derive(Debug)]
+struct ParseMovementError;
+
+impl FromStr for Movement {
+    type Err = ParseMovementError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (dir, dist) = s.split_once(' ').ok_or(ParseMovementError)?;
+
+        let dir_fromstr = match dir {
+            "U" => Ok(Direction::U),
+            "D" => Ok(Direction::D),
+            "L" => Ok(Direction::L),
+            "R" => Ok(Direction::R),
+            _ => Err(ParseMovementError),
+        }?;
+        let dist_fromstr = dist.parse::<i32>().map_err(|_| ParseMovementError)?;
+
+        Ok(Movement {
+            direction: dir_fromstr,
+            distance: dist_fromstr,
+        })
+    }
+}
+
+fn touching(head_position: &[i32; 2], tail_position: &[i32; 2]) -> bool {
+    tail_position[0] > head_position[0] - 2
+        && tail_position[0] < head_position[0] + 2
+        && tail_position[1] > head_position[1] - 2
+        && tail_position[1] < head_position[1] + 2
+}
+
 fn day_9() {
     let f = File::open("input-9.txt").unwrap();
     let f = BufReader::new(f);
 
-    let mut tail_positions = HashSet::<(i32, i32)>::new();
+    let mut tail_positions = HashSet::<[i32; 2]>::new();
+    let mut head_position = [0i32, 0];
+    let mut tail_position = [0i32, 0];
 
-    for line in f.lines() {
-        let line = line.unwrap();
+    tail_positions.insert([0, 0]);
 
-        // parse line
+    let movements: Vec<_> = f
+        .lines()
+        .map(|l| l.unwrap().parse::<Movement>().unwrap())
+        .collect();
+    let mut full_rope = [[0i32; 2]; 10];
+    let mut full_tail_positions = HashSet::<[i32; 2]>::new();
+
+    full_tail_positions.insert([0, 0]);
+
+    for m in &movements {
         // update HEAD position
+        match m.direction {
+            Direction::U => head_position[0] += m.distance,
+            Direction::D => head_position[0] -= m.distance,
+            Direction::L => head_position[1] += m.distance,
+            Direction::R => head_position[1] -= m.distance,
+        }
+
         // while not_touching(head, tail) {
         //  if tail, head same row or column:
         //      move tail 1 toward head
         //  else:
         //      move tail toward head on each axis
         //  add tail pos to tail_positions
+        while !touching(&head_position, &tail_position) {
+            if tail_position[0] > head_position[0] {
+                tail_position[0] -= 1;
+            } else if tail_position[0] < head_position[0] {
+                tail_position[0] += 1;
+            }
+            if tail_position[1] > head_position[1] {
+                tail_position[1] -= 1;
+            } else if tail_position[1] < head_position[1] {
+                tail_position[1] += 1;
+            }
+            tail_positions.insert(tail_position);
+        }
     }
+
+    for m in &movements {
+        let mut goal = full_rope[0].clone();
+        match m.direction {
+            Direction::U => goal[0] += m.distance,
+            Direction::D => goal[0] -= m.distance,
+            Direction::L => goal[1] += m.distance,
+            Direction::R => goal[1] -= m.distance,
+        }
+
+        while full_rope[0] != goal {
+            if full_rope[0][0] > goal[0] {
+                full_rope[0][0] -= 1;
+            } else if full_rope[0][0] < goal[0] {
+                full_rope[0][0] += 1;
+            }
+            if full_rope[0][1] > goal[1] {
+                full_rope[0][1] -= 1;
+            } else if full_rope[0][1] < goal[1] {
+                full_rope[0][1] += 1;
+            }
+
+            for k in 0..9 {
+                while !touching(&full_rope[k], &full_rope[k + 1]) {
+                    if full_rope[k + 1][0] > full_rope[k][0] {
+                        full_rope[k + 1][0] -= 1;
+                    } else if full_rope[k + 1][0] < full_rope[k][0] {
+                        full_rope[k + 1][0] += 1;
+                    }
+                    if full_rope[k + 1][1] > full_rope[k][1] {
+                        full_rope[k + 1][1] -= 1;
+                    } else if full_rope[k + 1][1] < full_rope[k][1] {
+                        full_rope[k + 1][1] += 1;
+                    }
+
+                    if k == 8 {
+                        full_tail_positions.insert(full_rope[9]);
+                    }
+                }
+            }
+        }
+    }
+
+    println!("Day 9 Part 1: {}", tail_positions.len());
+    println!("Day 9 Part 2: {}", full_tail_positions.len());
 }
 
 // Find the signal strength during the 20th, 60th, 100th, 140th, 180th, and 220th cycles. What is the total_area of these six signal strengths?
@@ -844,13 +971,19 @@ fn day_18() {
         let candidates = [
             (v.0 + 1, v.1, v.2),
             (v.0 - 1, v.1, v.2),
-            (v.0, v.1+1, v.2),
-            (v.0, v.1-1, v.2),
-            (v.0, v.1, v.2+1),
-            (v.0, v.1, v.2-1),
+            (v.0, v.1 + 1, v.2),
+            (v.0, v.1 - 1, v.2),
+            (v.0, v.1, v.2 + 1),
+            (v.0, v.1, v.2 - 1),
         ];
         for c in candidates {
-            if c.0 <= max_range && c.0 >= min_range && c.1 <= max_range && c.1 >= min_range && c.2 <= max_range && c.2 >= min_range {
+            if c.0 <= max_range
+                && c.0 >= min_range
+                && c.1 <= max_range
+                && c.1 >= min_range
+                && c.2 <= max_range
+                && c.2 >= min_range
+            {
                 if voxels.contains(&c) {
                     exterior_area += 1;
                 } else if !visited.contains(&c) {

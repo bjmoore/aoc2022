@@ -1,6 +1,8 @@
 use std::fs::{read_to_string, File};
 use std::io::{BufRead, BufReader};
 
+// input file -> some printable result
+
 pub fn solve() {
     let f = File::open("src/day1/input-1.txt").unwrap();
     let f = BufReader::new(f);
