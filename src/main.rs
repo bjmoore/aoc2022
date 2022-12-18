@@ -5,43 +5,25 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::{read_to_string, File};
 use std::io::{BufRead, BufReader};
+use crate::day1::solve;
+
+mod day1;
 
 fn main() {
-    day_1();
+    day1::solve();
     day_2();
     day_3();
     day_4();
     day_5();
     day_6();
     day_7();
+    day_8();
     day_10();
     day_11();
     day_12();
     day_13();
-}
-
-fn day_1() {
-    let f = File::open("input-1.txt").unwrap();
-    let f = BufReader::new(f);
-
-    let mut elfs = vec![0; 3];
-    let mut current_elf = 0;
-
-    for line in f.lines() {
-        let line = line.unwrap();
-        if line == "" {
-            if current_elf > elfs[0] {
-                elfs[0] = current_elf;
-                elfs.sort();
-            }
-            current_elf = 0;
-        } else {
-            current_elf += line.parse::<i32>().unwrap();
-        }
-    }
-
-    println!("Day 1 Part 1: {}", elfs[2]);
-    println!("Day 1 Part 2: {}", elfs.iter().sum::<i32>());
+    day_14();
+    day_18();
 }
 
 fn day_2() {
@@ -92,7 +74,7 @@ fn day_3() {
         .zip(0..)
         .collect();
 
-    let mut priority_sum = 0;
+    let mut priority_total_area = 0;
 
     for chunk in &f.lines().chunks(3) {
         let shared_char = chunk
@@ -104,11 +86,11 @@ fn day_3() {
             .unwrap()
             .clone();
 
-        priority_sum += priority_map.get(&shared_char).unwrap();
+        priority_total_area += priority_map.get(&shared_char).unwrap();
     }
 
     println!("Day 3 Part 1: {}", "NOT IMPLEMENTED");
-    println!("Day 3 Part 2: {}", priority_sum);
+    println!("Day 3 Part 2: {}", priority_total_area);
 }
 
 fn day_4() {
@@ -234,7 +216,7 @@ fn day_7() {
     let f = File::open("input-7.txt").unwrap();
     let f = BufReader::new(f);
 
-    let mut sum_under_100000 = 0;
+    let mut total_area_under_100000 = 0;
     let mut stack = Vec::new();
     let mut dir_sizes = Vec::new();
     let mut current_size: u32 = 0;
@@ -251,10 +233,10 @@ fn day_7() {
             total_used += filesize;
             current_size += filesize;
         } else if line == "$ cd .." {
-            // if cd ..: add current size to sum_under_100k if <100000, pop from stack and add to parent dir size
+            // if cd ..: add current size to total_area_under_100k if <100000, pop from stack and add to parent dir size
             dir_sizes.push(current_size);
             if current_size < 100000 {
-                sum_under_100000 += current_size;
+                total_area_under_100000 += current_size;
             }
             current_size += stack.pop().unwrap();
         } else if line.starts_with("$ cd") {
@@ -268,20 +250,20 @@ fn day_7() {
 
     dir_sizes.push(current_size);
     if current_size < 100000 {
-        sum_under_100000 += current_size;
+        total_area_under_100000 += current_size;
     }
 
     while let Some(size) = stack.pop() {
         current_size += size;
         dir_sizes.push(current_size);
         if current_size < 100000 {
-            sum_under_100000 += current_size;
+            total_area_under_100000 += current_size;
         }
     }
 
     let space_needed = total_used - 40000000;
 
-    println!("Day 7 Part 1: {}", sum_under_100000);
+    println!("Day 7 Part 1: {}", total_area_under_100000);
     println!(
         "Day 7 Part 2: {}",
         dir_sizes
@@ -292,7 +274,113 @@ fn day_7() {
     );
 }
 
-fn day_8() {}
+fn day_8() {
+    let f = File::open("8-test.txt").unwrap();
+    let f = BufReader::new(f);
+
+    let map: HashMap<(u8, u8), u32> = f
+        .lines()
+        .map(|l| l.unwrap())
+        .zip(0..)
+        .flat_map(|(l, i)| {
+            l.chars()
+                .zip(0..)
+                .map(|(c, j)| ((i, j), c.to_digit(10).unwrap() + 1))
+                .collect::<Vec<((u8, u8), u32)>>()
+        })
+        .collect();
+
+    const max_len: u8 = 5;
+    let mut scenic_score = [[1u32; max_len as usize]; max_len as usize];
+
+    let mut vis = HashSet::new();
+    for i in 0..max_len {
+        let mut vis_threshold = 0;
+        let mut last = 0;
+        let mut scenic = 1;
+        for j in 0..max_len {
+            let height = *map.get(&(i, j)).unwrap();
+            if height > vis_threshold {
+                vis.insert((i, j));
+                vis_threshold = height;
+            }
+            if height <= last {
+                scenic = 1;
+            } else {
+                scenic += 1;
+            }
+            last = height;
+            scenic_score[i as usize][j as usize] *= scenic;
+        }
+    }
+
+    for i in 0..max_len {
+        let mut vis_threshold = 0;
+        let mut last = 0;
+        let mut scenic = 1;
+        for j in 0..max_len {
+            let height = *map.get(&(j, i)).unwrap();
+            if height > vis_threshold {
+                vis.insert((j, i));
+                vis_threshold = height;
+            }
+            if height <= last {
+                scenic = 1;
+            } else {
+                scenic += 1;
+            }
+            last = height;
+            scenic_score[j as usize][i as usize] *= scenic;
+        }
+    }
+
+    for i in 0..max_len {
+        let mut vis_threshold = 0;
+        let mut last = 0;
+        let mut scenic = 1;
+        for j in (0..max_len).rev() {
+            let height = *map.get(&(i, j)).unwrap();
+            if height > vis_threshold {
+                vis.insert((i, j));
+                vis_threshold = height;
+            }
+            if height <= last {
+                scenic = 1;
+            } else {
+                scenic += 1;
+            }
+            last = height;
+            scenic_score[i as usize][j as usize] *= scenic;
+        }
+    }
+
+    for i in 0..max_len {
+        let mut vis_threshold = 0;
+        let mut last = 0;
+        let mut scenic = 1;
+        for j in (0..max_len).rev() {
+            let height = *map.get(&(j, i)).unwrap();
+            if height > vis_threshold {
+                vis.insert((j, i));
+                vis_threshold = height;
+            }
+            if height <= last {
+                scenic = 1;
+            } else {
+                scenic_score[j as usize][i as usize] *= scenic;
+                scenic += 1;
+            }
+            last = height;
+        }
+    }
+
+    println!("Day 8 Part 1: {}", vis.len());
+    println!("Day 8 Part 2: {:?}", scenic_score);
+    println!(
+        "Day 8 Part 2: {:?}",
+        scenic_score.iter().flatten().max().unwrap()
+    );
+}
 
 fn day_9() {
     let f = File::open("input-9.txt").unwrap();
@@ -314,7 +402,7 @@ fn day_9() {
     }
 }
 
-// Find the signal strength during the 20th, 60th, 100th, 140th, 180th, and 220th cycles. What is the sum of these six signal strengths?
+// Find the signal strength during the 20th, 60th, 100th, 140th, 180th, and 220th cycles. What is the total_area of these six signal strengths?
 fn day_10() {
     let f = File::open("input-10.txt").unwrap();
     let f = BufReader::new(f);
@@ -337,7 +425,7 @@ fn day_10() {
         })
         .collect();
 
-    let signal_sum = state[19] * 20
+    let signal_total_area = state[19] * 20
         + state[59] * 60
         + state[99] * 100
         + state[139] * 140
@@ -355,7 +443,7 @@ fn day_10() {
         })
         .collect();
 
-    println!("Day 10 Part 1: {}", signal_sum);
+    println!("Day 10 Part 1: {}", signal_total_area);
     println!("Day 10 Part 2: '{}'", graphics);
 }
 
@@ -654,7 +742,7 @@ fn day_13() {
         .map(|l| build_tree(&l))
         .collect();
 
-    let sum_of_ordered_pair_indices: u32 = treebuf
+    let total_area_of_ordered_pair_indices: u32 = treebuf
         .chunks(2)
         .zip(1..)
         .map(|(trees, i)| match trees[0].cmp(&trees[1]) {
@@ -671,10 +759,6 @@ fn day_13() {
 
     treebuf.sort();
 
-    for (i, tree) in treebuf.iter().enumerate() {
-        println!("{}: {:?}", i, tree);
-    }
-
     let divider_indices: Vec<usize> = treebuf
         .iter()
         .enumerate()
@@ -682,8 +766,14 @@ fn day_13() {
         .map(|(i, _)| i)
         .collect();
 
-    println!("Day 13 Part 1: {}", sum_of_ordered_pair_indices);
+    println!("Day 13 Part 1: {}", total_area_of_ordered_pair_indices);
     println!("Day 13 Part 2: {:?}", divider_indices);
+}
+
+fn build_walls(f: BufReader<File>) -> HashSet<(u16, u16)> {
+    let mut walls: HashSet<(u16, u16)> = HashSet::new();
+
+    walls
 }
 
 fn day_14() {
@@ -692,12 +782,85 @@ fn day_14() {
 
     // #1: parse lines to build catcher structure
     // #2: simulate sand falling until one of them reaches the lowest wall built in step #1
-    let mut walls =  HashSet::<(u16, u16)>::new();
+    let walls = build_walls(f);
 
-    for line in f.lines() {
-        let line = line.unwrap();
+    println!("Day 14 Part 1: {}", 0);
+    println!("Day 14 Part 2: {}", 0);
+}
+
+fn parse_voxels(f: BufReader<File>) -> HashSet<(i8, i8, i8)> {
+    f.lines()
+        .map(|l| {
+            let l = l.unwrap();
+            let mut l = l.split(',');
+
+            (
+                l.next().unwrap().parse::<i8>().unwrap(),
+                l.next().unwrap().parse::<i8>().unwrap(),
+                l.next().unwrap().parse::<i8>().unwrap(),
+            )
+        })
+        .collect()
+}
+
+fn day_18() {
+    let f = File::open("input-18.txt").unwrap();
+    let f = BufReader::new(f);
+
+    let voxels = parse_voxels(f);
+
+    let mut total_area = 0;
+    for &v in &voxels {
+        if !voxels.contains(&(v.0 + 1, v.1, v.2)) {
+            total_area += 1;
+        }
+        if !voxels.contains(&(v.0 - 1, v.1, v.2)) {
+            total_area += 1;
+        }
+        if !voxels.contains(&(v.0, v.1 + 1, v.2)) {
+            total_area += 1;
+        }
+        if !voxels.contains(&(v.0, v.1 - 1, v.2)) {
+            total_area += 1;
+        }
+        if !voxels.contains(&(v.0, v.1, v.2 + 1)) {
+            total_area += 1;
+        }
+        if !voxels.contains(&(v.0, v.1, v.2 - 1)) {
+            total_area += 1;
+        }
     }
 
-    println!("Day 14 Part 1: {}", sum_of_ordered_pair_indices);
-    println!("Day 14 Part 2: {:?}", divider_indices);
+    let mut visited = HashSet::<(i8, i8, i8)>::new();
+    let mut to_visit = VecDeque::<(i8, i8, i8)>::new();
+    let mut exterior_area = 0;
+
+    to_visit.push_back((0, 0, 0));
+
+    let max_range = 22;
+    let min_range = -1;
+
+    while let Some(v) = to_visit.pop_front() {
+        let candidates = [
+            (v.0 + 1, v.1, v.2),
+            (v.0 - 1, v.1, v.2),
+            (v.0, v.1+1, v.2),
+            (v.0, v.1-1, v.2),
+            (v.0, v.1, v.2+1),
+            (v.0, v.1, v.2-1),
+        ];
+        for c in candidates {
+            if c.0 <= max_range && c.0 >= min_range && c.1 <= max_range && c.1 >= min_range && c.2 <= max_range && c.2 >= min_range {
+                if voxels.contains(&c) {
+                    exterior_area += 1;
+                } else if !visited.contains(&c) {
+                    to_visit.push_back(c);
+                    visited.insert(c);
+                }
+            }
+        }
+    }
+
+    println!("Day 18 Part 1: {}", total_area);
+    println!("Day 18 Part 2: {}", exterior_area);
 }
