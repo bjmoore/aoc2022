@@ -28,7 +28,7 @@ fn main() {
     day_11();
     day_12();
     day_13();
-    day_14();
+    //day_14();
     day_15();
     day_18();
 }
@@ -310,9 +310,9 @@ fn day_8() {
                 vis.insert((i, j));
                 vis_threshold = height;
             }
-            scenic_score[i as usize][j as usize] *= scenic_score_line[(height-1) as usize];
+            scenic_score[i as usize][j as usize] *= scenic_score_line[(height - 1) as usize];
             for k in 0..10 {
-                if (height-1) < k {
+                if (height - 1) < k {
                     scenic_score_line[k as usize] += 1;
                 } else {
                     scenic_score_line[k as usize] = 1;
@@ -330,9 +330,9 @@ fn day_8() {
                 vis.insert((j, i));
                 vis_threshold = height;
             }
-            scenic_score[j as usize][i as usize] *= scenic_score_line[(height-1) as usize];
+            scenic_score[j as usize][i as usize] *= scenic_score_line[(height - 1) as usize];
             for k in 0..10 {
-                if (height-1) < k {
+                if (height - 1) < k {
                     scenic_score_line[k as usize] += 1;
                 } else {
                     scenic_score_line[k as usize] = 1;
@@ -340,7 +340,6 @@ fn day_8() {
             }
         }
     }
-    
 
     for i in 0..max_len {
         let mut vis_threshold = 0;
@@ -351,15 +350,15 @@ fn day_8() {
                 vis.insert((i, j));
                 vis_threshold = height;
             }
-            scenic_score[i as usize][j as usize] *= scenic_score_line[(height-1) as usize];
+            scenic_score[i as usize][j as usize] *= scenic_score_line[(height - 1) as usize];
             for k in 0..10 {
-                if (height-1) < k {
+                if (height - 1) < k {
                     scenic_score_line[k as usize] += 1;
                 } else {
                     scenic_score_line[k as usize] = 1;
                 }
             }
-        } 
+        }
     }
 
     for i in 0..max_len {
@@ -371,9 +370,9 @@ fn day_8() {
                 vis.insert((j, i));
                 vis_threshold = height;
             }
-            scenic_score[j as usize][i as usize] *= scenic_score_line[(height-1) as usize];
+            scenic_score[j as usize][i as usize] *= scenic_score_line[(height - 1) as usize];
             for k in 0..10 {
-                if (height-1) < k {
+                if (height - 1) < k {
                     scenic_score_line[k as usize] += 1;
                 } else {
                     scenic_score_line[k as usize] = 1;
@@ -897,10 +896,68 @@ fn day_13() {
     println!("Day 13 Part 2: {:?}", divider_indices);
 }
 
-fn build_walls(f: BufReader<File>) -> HashSet<(u16, u16)> {
-    let mut walls: HashSet<(u16, u16)> = HashSet::new();
+fn build_walls(f: BufReader<File>) -> HashSet<[u16; 2]> {
+    let mut walls: HashSet<[u16; 2]> = HashSet::new();
+
+    for line in f.lines() {
+        let line = line.unwrap();
+        let points: Vec<[u16; 2]> = line
+            .split(" -> ")
+            .map(|p| {
+                let p = p.split_once(',').unwrap();
+                [p.0.parse::<u16>().unwrap(), p.1.parse::<u16>().unwrap()]
+            })
+            .collect();
+
+        let mut ptr = points[0];
+        walls.insert(ptr);
+        for &p in points.iter() {
+            while ptr != p {
+                if ptr[0] < p[0] {
+                    ptr[0] += 1
+                } else if ptr[0] > p[0] {
+                    ptr[0] -= 1
+                } else if ptr[1] < p[1] {
+                    ptr[1] += 1
+                } else if ptr[1] > p[1] {
+                    ptr[1] -= 1
+                }
+                walls.insert(ptr);
+            }
+        }
+    }
 
     walls
+}
+
+struct SandStream {
+    source: [u16; 2],
+    visit_queue: VecDeque<[u16; 2]>,
+}
+
+impl SandStream {
+    fn init(
+        source: [u16; 2],
+        walls: &HashSet<[u16; 2]>,
+        sand: &HashSet<[u16; 2]>,
+        lowest_floor: u16,
+    ) -> Self {
+        let mut bottom = source;
+        loop {
+            if bottom[1] + 1 == lowest_floor
+                || walls.contains(&[bottom[0], bottom[1] + 1])
+                || sand.contains(&[bottom[0], bottom[1] + 1])
+            {
+                break;
+            } else {
+                bottom[1] += 1;
+            }
+        }
+        Self {
+            source: source,
+            visit_queue: VecDeque::from([bottom]),
+        }
+    }
 }
 
 fn day_14() {
@@ -908,18 +965,87 @@ fn day_14() {
     let f = BufReader::new(f);
 
     // #1: parse lines to build catcher structure
-    // #2: simulate sand falling until one of them reaches the lowest wall built in step #1
     let walls = build_walls(f);
+    let lowest_floor = walls.iter().map(|w| w[1]).max().unwrap();
+    let mut sand = HashSet::<[u16; 2]>::new();
 
-    println!("Day 14 Part 1: {}", 0);
-    println!("Day 14 Part 2: {}", 0);
+    // #2: simulate sand falling until one of them reaches the lowest wall built in step #1
+    'outer: loop {
+        let mut sand_ptr = [500u16, 0u16];
+        loop {
+            if sand_ptr[1] == lowest_floor {
+                break 'outer;
+            } else if !walls.contains(&[sand_ptr[0], sand_ptr[1] + 1])
+                && !sand.contains(&[sand_ptr[0], sand_ptr[1] + 1])
+            {
+                sand_ptr[1] += 1;
+            } else if !walls.contains(&[sand_ptr[0] - 1, sand_ptr[1] + 1])
+                && !sand.contains(&[sand_ptr[0] - 1, sand_ptr[1] + 1])
+            {
+                sand_ptr[0] -= 1;
+                sand_ptr[1] += 1;
+            } else if !walls.contains(&[sand_ptr[0] + 1, sand_ptr[1] + 1])
+                && !sand.contains(&[sand_ptr[0] + 1, sand_ptr[1] + 1])
+            {
+                sand_ptr[0] += 1;
+                sand_ptr[1] += 1;
+            } else {
+                sand.insert(sand_ptr);
+                break;
+            }
+        }
+    }
+
+    let mut sand_2 = HashSet::<[u16; 2]>::new();
+    let mut source_stack: Vec<SandStream> = Vec::new();
+    // source_stack.push(SandStream::init([500u16, 0]));
+    // #3: (lazy..) simulate sand in scenario 2 to find a safe spot
+    loop {
+        if sand_2.contains(&[500, 0]) {
+            break;
+        }
+        let mut sand_ptr = [500u16, 0u16];
+        loop {
+            println!("{:?}", sand_ptr);
+            if sand_ptr[1] == lowest_floor + 1 {
+                sand_2.insert(sand_ptr);
+                break;
+            } else if !walls.contains(&[sand_ptr[0], sand_ptr[1] + 1])
+                && !sand.contains(&[sand_ptr[0], sand_ptr[1] + 1])
+            {
+                sand_ptr[1] += 1;
+            } else if !walls.contains(&[sand_ptr[0] - 1, sand_ptr[1] + 1])
+                && !sand.contains(&[sand_ptr[0] - 1, sand_ptr[1] + 1])
+            {
+                sand_ptr[0] -= 1;
+                sand_ptr[1] += 1;
+            } else if !walls.contains(&[sand_ptr[0] + 1, sand_ptr[1] + 1])
+                && !sand.contains(&[sand_ptr[0] + 1, sand_ptr[1] + 1])
+            {
+                sand_ptr[0] += 1;
+                sand_ptr[1] += 1;
+            } else {
+                sand_2.insert(sand_ptr);
+                break;
+            }
+        }
+    }
+
+    // scan down and build a stream (y value, queue of points to try to populate)
+    //  for each point:
+    //   if below is open, scan down to new bottom, put a sand there, push old source onto stack and update cur source. new queue.
+    //   else if we have a clear path back up to the stream y-axis, insert a sand and any points to visit in the queue
+    //   if we build back up to source, pop the source stack and push our cur queue onto the back of the popped queue
+
+    println!("Day 14 Part 1: {}", sand.len());
+    println!("Day 14 Part 2: {}", sand_2.len());
 }
 
 #[derive(Debug)]
 struct Sensor {
     x: i32,
     y: i32,
-    beacon_range: i32
+    beacon_range: i32,
 }
 
 fn parse_sensor_layout(f: BufReader<File>) -> Vec<Sensor> {
@@ -930,12 +1056,36 @@ fn parse_sensor_layout(f: BufReader<File>) -> Vec<Sensor> {
         let mut line = line.split(' ');
         // 2 0 4 0
         let bad: &[_] = &['x', 'y', '=', ',', ':'];
-        let sensor_x = line.nth(2).unwrap().trim_matches(bad).parse::<i32>().unwrap();
-        let sensor_y = line.nth(0).unwrap().trim_matches(bad).parse::<i32>().unwrap();
-        let beacon_x = line.nth(4).unwrap().trim_matches(bad).parse::<i32>().unwrap();
-        let beacon_y = line.nth(0).unwrap().trim_matches(bad).parse::<i32>().unwrap();
+        let sensor_x = line
+            .nth(2)
+            .unwrap()
+            .trim_matches(bad)
+            .parse::<i32>()
+            .unwrap();
+        let sensor_y = line
+            .nth(0)
+            .unwrap()
+            .trim_matches(bad)
+            .parse::<i32>()
+            .unwrap();
+        let beacon_x = line
+            .nth(4)
+            .unwrap()
+            .trim_matches(bad)
+            .parse::<i32>()
+            .unwrap();
+        let beacon_y = line
+            .nth(0)
+            .unwrap()
+            .trim_matches(bad)
+            .parse::<i32>()
+            .unwrap();
 
-        sensors.push(Sensor { x: sensor_x, y: sensor_y, beacon_range: (sensor_x - beacon_x).abs() + (sensor_y - beacon_y).abs()})
+        sensors.push(Sensor {
+            x: sensor_x,
+            y: sensor_y,
+            beacon_range: (sensor_x - beacon_x).abs() + (sensor_y - beacon_y).abs(),
+        })
     }
 
     sensors
@@ -971,34 +1121,47 @@ fn day_15() {
     let max_x = sensors.iter().map(|s| s.x + s.beacon_range).max().unwrap();
 
     let y = 2000000;
-    let y_intervals_2m: Vec<[i32; 2]> = sensors.iter().filter_map(|s| {
-        let displacement = (s.y - y).abs();
-        if displacement <= s.beacon_range {
-            Some([s.x - s.beacon_range + displacement, s.x + s.beacon_range - displacement + 1])
-        } else {
-            None
-        }
-    }).collect();
-    let row_2000000 = merge_intervals(y_intervals_2m);
-
-    let excluded_squares = row_2000000[0][1] - row_2000000[0][0] - 1 ;
-
-    let (x, y): (u64, u64) = (0..4000000).find_map(|y| {
-        let y_intervals: Vec<[i32; 2]> = sensors.iter().filter_map(|s| {
+    let y_intervals_2m: Vec<[i32; 2]> = sensors
+        .iter()
+        .filter_map(|s| {
             let displacement = (s.y - y).abs();
             if displacement <= s.beacon_range {
-                Some([s.x - s.beacon_range + displacement, s.x + s.beacon_range - displacement + 1])
+                Some([
+                    s.x - s.beacon_range + displacement,
+                    s.x + s.beacon_range - displacement + 1,
+                ])
             } else {
                 None
             }
-        }).collect();
-        let merged = merge_intervals(y_intervals);
-        if merged.len() == 2 {
-            Some((merged[0][1] as u64, y as u64))
-        } else {
-            None
-        }
-    }).unwrap();
+        })
+        .collect();
+    let row_2000000 = merge_intervals(y_intervals_2m);
+    let excluded_squares = row_2000000[0][1] - row_2000000[0][0] - 1;
+
+    let (x, y): (u64, u64) = (0..4000000)
+        .find_map(|y| {
+            let y_intervals: Vec<[i32; 2]> = sensors
+                .iter()
+                .filter_map(|s| {
+                    let displacement = (s.y - y).abs();
+                    if displacement <= s.beacon_range {
+                        Some([
+                            s.x - s.beacon_range + displacement,
+                            s.x + s.beacon_range - displacement + 1,
+                        ])
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            let merged = merge_intervals(y_intervals);
+            if merged.len() == 2 {
+                Some((merged[0][1] as u64, y as u64))
+            } else {
+                None
+            }
+        })
+        .unwrap();
 
     println!("Day 15 Part 1: {}", excluded_squares);
     println!("Day 15 Part 2: {}", x * 4000000 + y);
