@@ -1,12 +1,8 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-
-pub fn solve(input: BufReader<File>) -> Option<(i32, i32)> {
+pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
     let mut elfs = vec![0; 3];
     let mut current_elf = 0;
 
-    for line in input.lines() {
-        let line = line.unwrap();
+    for line in input.iter() {
         if line == "" {
             if current_elf > elfs[0] {
                 elfs[0] = current_elf;

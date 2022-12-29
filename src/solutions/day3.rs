@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use itertools::Itertools;
 
 fn char_bitmask(c: char) -> u64 {
     match c {
@@ -68,15 +67,10 @@ fn bitwise_log2(mut int: u64) -> i32 {
     count
 }
 
-pub fn solve(input: BufReader<File>) -> Option<(i32, i32)> {
-    // map char onto a bitmask
-    // OR all bitmasks in each half
-    // AND the combined bitmasks from each half
-
+pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
     let part1 = input
-        .lines()
+        .iter()
         .map(|line| {
-            let line = line.unwrap();
             let first_half_bitmask = line
                 .chars()
                 .take(line.len() / 2)
@@ -89,5 +83,21 @@ pub fn solve(input: BufReader<File>) -> Option<(i32, i32)> {
         })
         .sum();
 
-    Some((part1, 0))
+    let part2 = input
+        .iter()
+        .chunks(3)
+        .into_iter()
+        .map(|chunk| {
+            let bitmask = chunk
+                .map(|line| {
+                    line.chars()
+                        .fold(0u64, |acc, next| acc | char_bitmask(next))
+                })
+                .reduce(|acc, next| acc & next)
+                .unwrap_or(0);
+            bitwise_log2(bitmask)
+        })
+        .sum();
+
+    Some((part1, part2))
 }

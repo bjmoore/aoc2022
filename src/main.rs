@@ -25,7 +25,7 @@ fn main() {
     let start = Instant::now();
 
     if let Some(day) = cli.day {
-        solutions::run_one(day);
+        solutions::run_one(day, cli.input);
     } else {
         solutions::run_all();
     }

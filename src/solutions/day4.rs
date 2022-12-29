@@ -1,13 +1,8 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-
-pub fn solve(input: BufReader<File>) -> Option<(i32, i32)> {
+pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
     let mut contained = 0;
     let mut overlap = 0;
 
-    for line in input.lines() {
-        let line = line.unwrap();
-
+    for line in input.iter() {
         let vals: Vec<u32> = line
             .split(&['-', ','])
             .map(|s| s.parse().unwrap())

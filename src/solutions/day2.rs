@@ -1,6 +1,3 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-
 fn strategy_one(line: &str) -> i32 {
     match line {
         "A X" => 4,
@@ -31,8 +28,8 @@ fn strategy_two(line: &str) -> i32 {
     }
 }
 
-pub fn solve(input: BufReader<File>) -> Option<(i32, i32)> {
-    let (part1, part2) = input.lines().map(|l| l.unwrap()).fold((0, 0), |acc, line| {
+pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
+    let (part1, part2) = input.iter().fold((0, 0), |acc, line| {
         (acc.0 + strategy_one(&line), acc.1 + strategy_two(&line))
     });
 
