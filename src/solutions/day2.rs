@@ -1,3 +1,5 @@
+use std::error::Error;
+
 fn strategy_one(line: &str) -> i32 {
     match line {
         "A X" => 4,
@@ -28,10 +30,10 @@ fn strategy_two(line: &str) -> i32 {
     }
 }
 
-pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
+pub fn solve(input: Vec<String>) -> Result<(String, String), Box<dyn Error>> {
     let (part1, part2) = input.iter().fold((0, 0), |acc, line| {
         (acc.0 + strategy_one(&line), acc.1 + strategy_two(&line))
     });
 
-    Some((part1, part2))
+    Ok((part1.to_string(), part2.to_string()))
 }

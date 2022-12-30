@@ -1,4 +1,6 @@
-pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
+use std::error::Error;
+
+pub fn solve(input: Vec<String>) -> Result<(String, String), Box<dyn Error>> {
     let mut contained = 0;
     let mut overlap = 0;
 
@@ -21,5 +23,5 @@ pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
         }
     }
 
-    Some((contained, overlap))
+    Ok((contained.to_string(), overlap.to_string()))
 }

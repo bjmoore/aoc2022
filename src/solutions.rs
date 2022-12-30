@@ -25,9 +25,9 @@ pub fn run_one(day: u8, input: Option<PathBuf>) -> Result<(String, String), Box<
 
     match day {
         1 => day1::solve(input),
-        //2 => day2::solve(input),
-        //3 => day3::solve(input),
-        //4 => day4::solve(input),
+        2 => day2::solve(input),
+        3 => day3::solve(input),
+        4 => day4::solve(input),
         _ => Err(Box::from(format!("Day {day} not implemented"))),
     }
 }

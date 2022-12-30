@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use std::error::Error;
 
 fn char_bitmask(c: char) -> u64 {
     match c {
@@ -58,7 +59,7 @@ fn char_bitmask(c: char) -> u64 {
     }
 }
 
-fn bitwise_log2(mut int: u64) -> i32 {
+fn bitwise_log2(mut int: u64) -> u32 {
     let mut count = 0;
     while int > 0 {
         int >>= 1;
@@ -67,8 +68,8 @@ fn bitwise_log2(mut int: u64) -> i32 {
     count
 }
 
-pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
-    let part1 = input
+pub fn solve(input: Vec<String>) -> Result<(String, String), Box<dyn Error>> {
+    let part1: u32 = input
         .iter()
         .map(|line| {
             let first_half_bitmask = line
@@ -83,7 +84,7 @@ pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
         })
         .sum();
 
-    let part2 = input
+    let part2: u32 = input
         .iter()
         .chunks(3)
         .into_iter()
@@ -99,5 +100,5 @@ pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
         })
         .sum();
 
-    Some((part1, part2))
+    Ok((part1.to_string(), part2.to_string()))
 }
