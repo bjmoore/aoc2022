@@ -1,4 +1,6 @@
-pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
+use std::error::Error;
+
+pub fn solve(input: Vec<String>) -> Result<(String, String), Box<dyn Error>> {
     let mut elfs = vec![0; 3];
     let mut current_elf = 0;
 
@@ -14,5 +16,5 @@ pub fn solve(input: Vec<String>) -> Option<(i32, i32)> {
         }
     }
 
-    Some((elfs[2], elfs.iter().sum::<i32>()))
+    Ok((elfs[2].to_string(), elfs.iter().sum::<i32>().to_string()))
 }

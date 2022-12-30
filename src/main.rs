@@ -3,6 +3,7 @@ use regex::Regex;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::error::Error;
 use std::fs::{read_to_string, File};
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -20,14 +21,26 @@ struct Cli {
     input: Option<PathBuf>,
 }
 
+fn output_result(day: u8, result: Result<(String, String), Box<dyn Error>>) {
+    match result {
+        Ok((part1, part2)) => {
+            println!("Day {day} Part 1: {part1}");
+            println!("Day {day} Part 2: {part2}");
+        }
+        Err(err) => {
+            println!("Error running day {day}: {}", err.to_string());
+        }
+    }
+}
+
 fn main() {
     let cli = Cli::parse();
     let start = Instant::now();
 
     if let Some(day) = cli.day {
-        solutions::run_one(day, cli.input);
+        output_result(day, solutions::run_one(day, cli.input));
     } else {
-        solutions::run_all();
+        (1..=25).for_each(|i| output_result(i, solutions::run_one(i, None)));
     }
 
     println!("Total runtime: {}μs", start.elapsed().as_micros());
