@@ -46,62 +46,6 @@ fn main() {
     println!("Total runtime: {}μs", start.elapsed().as_micros());
 }
 
-fn day_5() {
-    let f = File::open("input-5.txt").unwrap();
-    let f = BufReader::new(f);
-    let mut lines = f.lines();
-
-    let initial_stack: HashMap<u32, RefCell<Vec<char>>> = lines
-        .by_ref()
-        .map(|line| line.unwrap())
-        .take_while(|line| line != " 1   2   3   4   5   6   7   8   9 ")
-        .fold(
-            HashMap::new(),
-            |mut acc: HashMap<_, RefCell<Vec<char>>>, line| {
-                let row = line.chars().skip(1).step_by(4).zip(1..);
-
-                for (box_name, column) in row {
-                    if box_name != ' ' {
-                        if let Some(vec) = acc.get_mut(&column) {
-                            vec.get_mut().push(box_name);
-                        } else {
-                            acc.insert(column, RefCell::new(Vec::from([box_name])));
-                        }
-                    }
-                }
-
-                acc
-            },
-        );
-
-    for (_, stack) in initial_stack.iter() {
-        stack.borrow_mut().reverse();
-    }
-
-    let filesize_regex = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
-
-    for line in lines {
-        let line = line.unwrap();
-        if let Some(cap) = filesize_regex.captures(&line) {
-            let count: usize = cap[1].parse().unwrap();
-            let source = cap[2].parse().unwrap();
-            let target = cap[3].parse().unwrap();
-            let mut source = initial_stack.get(&source).unwrap().borrow_mut();
-            let mut target = initial_stack.get(&target).unwrap().borrow_mut();
-            let at: usize = source.len() - count;
-            let mut moving_boxes = source.split_off(at);
-            target.append(&mut moving_boxes);
-        }
-    }
-
-    for i in 1..=9 {
-        //println!("{}", initial_stack.get(&i).unwrap().borrow().last().unwrap());
-    }
-
-    println!("Day 5 Part 1: {}", "NOT IMPLEMENTED");
-    println!("Day 5 Part 2: {}", "NOT IMPLEMENTED");
-}
-
 fn day_6() {
     let f = read_to_string("input-6.txt").unwrap();
 
