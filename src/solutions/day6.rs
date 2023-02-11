@@ -41,12 +41,10 @@ impl SlidingWindow {
 }
 
 pub fn solve(input: Vec<String>) -> Result<(String, String), Box<dyn Error>> {
-    let f = input.get(0).unwrap().chars();
-
     let mut first_packet_window = SlidingWindow::new(4);
     let mut start_of_message_window = SlidingWindow::new(14);
 
-    for c in f {
+    for c in input.get(0).unwrap().chars() {
         first_packet_window.push(c);
         start_of_message_window.push(c);
     }
