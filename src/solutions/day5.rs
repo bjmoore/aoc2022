@@ -1,6 +1,5 @@
-use std::error::Error;
-
 use itertools::Itertools;
+use std::error::Error;
 
 fn parse_move(input: &String) -> (usize, usize, usize) {
     let (count, from, to) = input

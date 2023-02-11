@@ -1,7 +1,5 @@
-use std::{
-    collections::{HashSet, VecDeque},
-    error::Error,
-};
+use std::collections::{HashSet, VecDeque};
+use std::error::Error;
 
 struct SlidingWindow {
     max_size: usize,

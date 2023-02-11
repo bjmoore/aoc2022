@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
-use std::fs::{read_to_string, File};
+use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
